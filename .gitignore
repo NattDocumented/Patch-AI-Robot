@@ -1,0 +1,49 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# =========================
+# OS junk
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs & runtime junk
+# =========================
+logs/
+*.log
+
+# =========================
+# AI / Model caches (CRITICAL)
+# =========================
+offload_weights/
+
+# Ollama / LMDeploy / Soprano
+**/ollama/
+**/lmdeploy/
+**/soprano/
+**/huggingface/
+
+# =========================
+# Runtime data (DO NOT COMMIT)
+# =========================
+patch_memory.json
+patch_reminders.json
+
+# =========================
+# Audio leftovers
+# =========================
+*.wav
+*.mp3
+#BUTTTTTT
+!Assets/**/*.wav
+!Assets/**/*.mp3
+
+!Assets/**
