@@ -24,7 +24,7 @@ This project is being built **incrementally**, with stability, realism, and futu
 - 🗣 **Voice I/O Pipeline**  
   STT → Reasoning → TTS using Soprano
 
-- ⏰ **Advanced Reminder System**
+- ⏰ **Reminder System**
   - Natural language time parsing  
   - Missed-reminder recovery  
   - Archiving with retention limits  
@@ -63,7 +63,7 @@ Commands are designed to be **natural language**, not strict syntax.
 
 - **“Switch to voice mode”**  
 - **“Switch to chat mode”**  
-  Changes interaction method on the fly
+  Changes the interaction method on the fly
 
 - **“Exit” / “Shut down” / “Power down”**  
   Gracefully shuts down Patch with audio feedback
@@ -207,7 +207,7 @@ Patch will eventually become:
 - Running **entirely locally**
 
 This repository currently represents the **brain**, not the body.
-(I mean... I don't even know if I can **represents** the body on GitHub)
+(I mean... I don't even know if I can **represent** the body on GitHub)
 
 ---
 
@@ -220,4 +220,4 @@ APIs, structure, and behavior may often change.
 
 ## 👤 Author
 
-Built by **Natt** (currently a 15-year-old on January 30, 2026.)
+Built by **Natt** (currently a 15-year-old on January 30, 2026)
