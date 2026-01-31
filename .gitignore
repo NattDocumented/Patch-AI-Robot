@@ -42,8 +42,17 @@ patch_reminders.json
 # =========================
 *.wav
 *.mp3
-#BUTTTTTT
-!Assets/**/*.wav
-!Assets/**/*.mp3
 
-!Assets/**
+# =========================
+# Shits I forgot
+# =========================
+
+Patch AI/Assets/Sounds/bootup_sounds/*
+Patch AI/Assets/Sounds/poweroff_sounds/*
+Patch AI/Assets/Faces/*
+
+archive/**/Assets/*
+
+!Patch AI/Assets/Sounds/bootup_sounds/.gitkeep
+!Patch AI/Assets/Sounds/poweroff_sounds/.gitkeep
+!Patch AI/Assets/Faces/.gitkeep
