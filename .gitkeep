@@ -1,0 +1,4 @@
+touch "Patch AI/Assets/Sounds/bootup_sounds/.gitkeep"
+touch "Patch AI/Assets/Sounds/poweroff_sounds/.gitkeep"
+touch "Patch AI/Assets/Faces/.gitkeep"
+touch "archive/whatever/Assets/.gitkeep"
