@@ -56,3 +56,4 @@ archive/**/Assets/*
 !Patch AI/Assets/Sounds/bootup_sounds/.gitkeep
 !Patch AI/Assets/Sounds/poweroff_sounds/.gitkeep
 !Patch AI/Assets/Faces/.gitkeep
+!archive/**/Assets/.gitkeep
