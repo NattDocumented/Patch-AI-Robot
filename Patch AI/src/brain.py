@@ -16,28 +16,59 @@ from datetime import datetime, timedelta
 import builtins
 #import pytz
 
-#os.environ["OLLAMA_NUM_GPU"] = "1"
+os.environ["OLLAMA_NUM_GPU"] = "1"
 
-os.makedirs("logs", exist_ok=True)
+#os.makedirs("Patch AI/logs/patch.log", exist_ok=True)
+
+# ==========================================
+# PRINTS & LOGS
+# ==========================================
+
+LOG_FILE = "Patch AI/logs/patch.log"
+MAX_LOG_LINES = 125
+_log_write_count = 0
 
 _original_print = builtins.print
 
-with open("logs/patch.log", "w", encoding="utf-8") as f:
+with open("Patch AI/logs/patch.log", "w", encoding="utf-8") as f:
     f.write("")
 
+def trim_log_file():
+    try:
+        with open(LOG_FILE, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        if len(lines) > MAX_LOG_LINES:
+            lines = lines[-MAX_LOG_LINES:]
+
+            with open(LOG_FILE, "w", encoding="utf-8") as f:
+                f.writelines(lines)
+
+    except Exception:
+        pass  # logging must NEVER crash Patch
+
 def print(*args, **kwargs):
+    global _log_write_count
+
     sep = kwargs.get("sep", " ")
     end = kwargs.get("end", "\n")
 
     text = sep.join(str(a) for a in args)
     timestamp = datetime.now().strftime("%H:%M:%S")
-    line = f"[{timestamp}] {text}"
 
-    _original_print(line, end=end)
+    lines = text.splitlines() or [""]
 
-    with open("logs/patch.log", "a", encoding="utf-8") as f:
-        f.write(line + end)
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        for line_text in lines:
+            line = f"[{timestamp}] {line_text}"
+            _original_print(line, end=end)
+            f.write(line + end)
+            _log_write_count += 1
 
+    # Trim every 50 lines (tweakable)
+    if _log_write_count >= 50:
+        trim_log_file()
+        _log_write_count = 0
 
 # Try to import torch for GPU detection, fallback to CPU if it fails
 try:
@@ -234,7 +265,8 @@ def init_soprano_dynamic():
 
 soprano_model = init_soprano_dynamic()
 
-r = sr.Recognizer()
+recognizer = sr.Recognizer()
+r = recognizer  # bind legacy variable safely
 m = sr.Microphone()
 
 pygame.mixer.pre_init(32000, -16, 2, 4096)
@@ -866,7 +898,7 @@ async def async_input(prompt=""):
 is_sleeping = False
 
 async def run_patch():
-    global interaction_mode, is_sleeping, ARCHIVE_RETENTION_DAYS, r, m
+    global interaction_mode, is_sleeping, ARCHIVE_RETENTION_DAYS, recognizer, m
     messages = load_memory()
 
     deep_clean_system()
@@ -894,14 +926,14 @@ async def run_patch():
         # --- GET INPUT FIRST ---
         if interaction_mode == "Voice":
             with m as source:
-                r.adjust_for_ambient_noise(source, duration=0.5)
+                recognizer.adjust_for_ambient_noise(source, duration=0.5)
                 if is_sleeping:
                     print("[System Sleeping - Listening for Wake Word...]")
                 else:
                     print("[Listening...]")
                 
                 try:
-                    user_input = r.recognize_google(r.listen(source, timeout=10))
+                    user_input = recognizer.recognize_google(recognizer.listen(source, timeout=10))
                     print(f"YOU: {user_input}")
                 except: 
                     continue
@@ -930,6 +962,10 @@ async def run_patch():
         if any(w in user_input.lower() for w in ["exit", "shut down", "power down"]):
             speak("Powering down. See you later, Friend!")
             play_system_sound("poweroff")
+
+            with open("Patch AI/logs/patch.log", "w", encoding="utf-8") as f:
+                f.write("")
+
             break
         
         # System Cleaning
@@ -1028,6 +1064,7 @@ async def run_patch():
         # REMINDER WIPING
         wipe_triggers = {
             "wipe active reminders": "active",
+            "wipe all active reminders": "active",
             "wipe reminder archive": "archive",
             "wipe all reminders": "all"
         }

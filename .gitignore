@@ -63,3 +63,5 @@ Patch AI/src/templates/*
 
 !Patch AI/src/templates/dashboard.html
 #the one
+
+Patch AI/src/static/faces/*

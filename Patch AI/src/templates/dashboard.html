@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>PATCH AI DASHBOARD</title>
+<title>PATCH AI TERMINAL</title>
 
 <style>
 :root {
@@ -10,6 +10,7 @@
   --panel: #111;
   --accent: #d4c16a;
   --text: #e8e8e8;
+  --glow: rgba(212, 193, 106, 0.6);
 }
 
 * { box-sizing: border-box; }
@@ -21,146 +22,622 @@ body {
   color: var(--text);
   font-family: "Courier New", monospace;
   overflow: hidden;
+  position: relative;
+}
+
+/* ===== CRT SCREEN EFFECT ===== */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.25) 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 9999;
+  animation: flicker 0.15s infinite;
+}
+
+@keyframes flicker {
+  0% { opacity: 0.97; }
+  50% { opacity: 0.94; }
+  100% { opacity: 0.98; }
+}
+
+/* ===== SCANLINE EFFECT ===== */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    transparent 0%,
+    rgba(212, 193, 106, 0.05) 50%,
+    transparent 100%
+  );
+  background-size: 100% 3px;
+  pointer-events: none;
+  z-index: 9998;
+  animation: scanline 8s linear infinite;
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* ===== SCREEN CURVE (CRT BULGE) ===== */
+#screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  box-shadow: 
+    inset 0 0 100px rgba(0,0,0,0.8),
+    inset 0 0 50px rgba(212, 193, 106, 0.1);
+  pointer-events: none;
+  z-index: 9997;
 }
 
 /* ===== TOP BAR ===== */
 #topbar {
-  height: 40px;
-  padding: 10px 16px;
-  border-bottom: 1px solid #222;
+  height: 50px;
+  padding: 12px 20px;
+  border-bottom: 2px solid #222;
   color: var(--accent);
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(to bottom, #0f0f0f, #0a0a0a);
+  text-shadow: 0 0 8px var(--glow);
+  position: relative;
+  z-index: 10;
 }
 
-/* ===== MAIN LAYOUT (same as sketch) ===== */
+#topbar::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--glow);
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+#status-badge {
+  font-size: 11px;
+  padding: 4px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  background: rgba(212,193,106,0.15);
+  box-shadow: 0 0 10px var(--glow);
+  animation: badge-pulse 3s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% { box-shadow: 0 0 10px var(--glow); }
+  50% { box-shadow: 0 0 20px var(--glow); }
+}
+
+/* ===== MAIN LAYOUT ===== */
 #main {
   display: grid;
-  grid-template-columns: 2.4fr 1.6fr;
-  height: calc(100vh - 40px);
+  grid-template-columns: 1.8fr 2.2fr;
+  height: calc(100vh - 50px);
+  position: relative;
+  z-index: 1;
 }
 
 /* ===== LEFT: TERMINAL ===== */
 #terminal {
-  padding: 14px;
+  padding: 20px;
   background: #000;
-  font-size: 18px;
-  line-height: 1.45;
-  letter-spacing: 0.3px;
-  white-space: pre;
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: 0.5px;
   overflow-y: auto;
-  text-shadow: 0 0 6px rgba(212,193,106,0.15);
+  text-shadow: 0 0 5px var(--accent);
+  border-right: 2px solid #222;
+  position: relative;
+}
+
+#terminal::before {
+  content: '> ';
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  color: var(--accent);
+  animation: cursor-blink 1s step-end infinite;
+}
+
+@keyframes cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+#terminal::-webkit-scrollbar {
+  width: 10px;
+}
+
+#terminal::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+#terminal::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 5px;
+  box-shadow: 0 0 10px var(--glow);
+}
+
+.log-line {
+  margin: 6px 0;
+  opacity: 0;
+  animation: fade-in 0.3s forwards;
+}
+
+@keyframes fade-in {
+  to { opacity: 0.9; }
+}
+
+.log-user {
+  color: #88ccff;
+  text-shadow: 0 0 5px #88ccff;
+}
+
+.log-patch {
+  color: #88ff88;
+  text-shadow: 0 0 5px #88ff88;
 }
 
 /* ===== RIGHT PANEL ===== */
 #right {
   display: grid;
-  grid-template-rows: 2.2fr 1fr 1fr;
-  border-left: 1px solid #222;
+  grid-template-rows: 3fr 1fr 0.8fr;
   background: var(--panel);
 }
 
-/* ===== FACE / EXPRESSION ===== */
+/* ===== FACE (RETRO STYLE) ===== */
 #face {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid #222;
-  background: radial-gradient(circle at center, rgba(212,193,106,0.08), transparent 70%);
+  border-bottom: 2px solid #222;
+  background: 
+    radial-gradient(circle at center, rgba(212,193,106,0.12), transparent 65%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(212, 193, 106, 0.03) 2px,
+      rgba(212, 193, 106, 0.03) 4px
+    );
+  position: relative;
+  overflow: hidden;
 }
 
+/* Starfield background */
+#starfield {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+    radial-gradient(2px 2px at 60px 70px, #ddd, transparent),
+    radial-gradient(1px 1px at 50px 50px, #fff, transparent),
+    radial-gradient(1px 1px at 130px 80px, #eee, transparent),
+    radial-gradient(2px 2px at 90px 10px, #fff, transparent);
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  opacity: 0.3;
+  animation: stars-move 60s linear infinite;
+}
+
+@keyframes stars-move {
+  from { transform: translateY(0); }
+  to { transform: translateY(200px); }
+}
+
+/* Breathing glow effect */
 @keyframes breathe {
-  0%   { box-shadow: 0 0 18px rgba(212,193,106,0.25); }
-  50%  { box-shadow: 0 0 40px rgba(212,193,106,0.5); }
-  100% { box-shadow: 0 0 18px rgba(212,193,106,0.25); }
+  0%   { 
+    transform: scale(1);
+    box-shadow: 
+      0 0 30px rgba(212,193,106,0.4),
+      inset 0 0 40px rgba(212,193,106,0.1);
+  }
+  50%  { 
+    transform: scale(1.08);
+    box-shadow: 
+      0 0 70px rgba(212,193,106,0.7),
+      inset 0 0 60px rgba(212,193,106,0.2);
+  }
+  100% { 
+    transform: scale(1);
+    box-shadow: 
+      0 0 30px rgba(212,193,106,0.4),
+      inset 0 0 40px rgba(212,193,106,0.1);
+  }
 }
 
 #face-circle {
-  width: 260px;
-  height: 260px;
+  width: 350px;
+  height: 350px;
   border-radius: 50%;
-  border: 2px solid var(--accent);
+  border: 3px solid var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
   color: var(--accent);
-  font-size: 22px;
-  letter-spacing: 1px;
-  animation: breathe 4s ease-in-out infinite;
+  font-size: 28px;
+  letter-spacing: 4px;
+  animation: breathe 5s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(212,193,106,0.08), transparent 60%);
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 0 20px var(--glow);
+}
+
+#face-expression {
+  width: 200px;
+  height: 200px;
+  margin-bottom: 20px;
+  animation: expression-blink 6s infinite;
+  filter: drop-shadow(0 0 10px var(--glow));
+  object-fit: contain;
+  image-rendering: crisp-edges; /* For pixel art if needed */
+}
+
+@keyframes expression-blink {
+  0%, 48%, 52%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+#face-state {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-top: 10px;
+  letter-spacing: 2px;
 }
 
 /* ===== SYSTEM MONITOR ===== */
 #system {
-  padding: 14px;
-  font-size: 14px;
-  line-height: 1.6;
-  border-bottom: 1px solid #222;
+  padding: 20px;
+  font-size: 13px;
+  line-height: 1.8;
+  border-bottom: 2px solid #222;
+  letter-spacing: 0.5px;
 }
 
-/* ===== CLOCK / MISC ===== */
+.stat-line {
+  margin: 10px 0;
+  display: grid;
+  grid-template-columns: 100px 1fr 120px;
+  gap: 12px;
+  align-items: center;
+}
+
+.stat-label {
+  color: #888;
+  text-shadow: 0 0 3px #888;
+}
+
+.stat-value {
+  color: var(--accent);
+  font-weight: bold;
+  text-shadow: 0 0 8px var(--glow);
+  text-align: right;
+}
+
+.stat-bar {
+  height: 10px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
+  width: 100%;
+}
+
+.stat-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #ffd700);
+  transition: width 0.5s ease;
+  box-shadow: 0 0 10px var(--glow);
+  animation: bar-glow 2s ease-in-out infinite;
+}
+
+/* NEW: Critical Alert Style */
+.stat-bar-fill.critical {
+  background: linear-gradient(90deg, #ff4444, #ff0000) !important;
+  box-shadow: 0 0 20px #ff0000 !important;
+  animation: critical-pulse 0.5s ease-in-out infinite alternate !important;
+}
+
+@keyframes critical-pulse {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.5); }
+}
+
+@keyframes bar-glow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.3); }
+}
+
+/* ===== CLOCK ===== */
 #misc {
-  padding: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #0a0a0a;
+  border-top: 1px solid var(--accent);
+  box-shadow: 0 -2px 10px rgba(212,193,106,0.2);
 }
 
 #clock {
-  font-size: 22px;
+  font-size: 36px;
   color: var(--accent);
+  letter-spacing: 4px;
+  font-weight: bold;
+  text-shadow: 
+    0 0 10px var(--glow),
+    0 0 20px var(--glow);
+  animation: clock-flicker 5s infinite;
 }
+
+#datetime {
+  font-size: 36px;
+  color: var(--accent);
+  letter-spacing: 4px;
+  font-weight: bold;
+  text-shadow: 
+    0 0 10px var(--glow),
+    0 0 20px var(--glow);
+  animation: clock-flicker 5s infinite;
+}
+
+@keyframes clock-flicker {
+  0%, 98%, 100% { opacity: 1; }
+  99% { opacity: 0.8; }
+}
+
+#uptime {
+  font-size: 11px;
+  color: #666;
+  margin-top: 8px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 3px #666;
+}
+
+/* ===== GLITCH EFFECT (occasional) ===== */
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}
+
+.glitch {
+  animation: glitch 0.3s;
+}
+
 </style>
 </head>
 
 <body>
 
-<div id="topbar">PATCH AI : v0.1</div>
+<div id="screen"></div>
+
+<div id="topbar">
+  <span>PATCH.AI::TERMINAL</span>
+  <span id="status-badge">● ONLINE</span>
+</div>
 
 <div id="main">
 
-  <!-- TERMINAL -->
-  <div id="terminal">Initializing PATCH interface...</div>
+  <div id="terminal">
+    <div class="log-line">&gt; Initializing PATCH interface...</div>
+    <div class="log-line">&gt; Establishing connection...</div>
+    <div class="log-line">&gt; System ready.</div>
+  </div>
 
-  <!-- RIGHT SIDE -->
   <div id="right">
 
     <div id="face">
-      <div id="face-circle">PATCH</div>
+      <div id="starfield"></div>
+      <div id="face-circle">
+        <img id="face-expression" src="static/faces/idle.png" alt="PATCH Face">
+        <div>PATCH</div>
+        <div id="face-state">IDLE</div>
+      </div>
     </div>
 
     <div id="system">
-      SYSTEM MONITOR<br>
-      GPU LOAD: <span id="gpu">--%</span><br>
-      VRAM: <span id="vram">--</span><br>
-      STATUS: ONLINE
+      <div class="stat-line">
+        <span class="stat-label">GPU.VRAM</span>
+        <div class="stat-bar"><div class="stat-bar-fill" id="vram-bar" style="width: 0%"></div></div>
+        <span class="stat-value" id="vram-text">--</span>
+      </div>
+      <div class="stat-line">
+        <span class="stat-label">CPU.LOAD</span>
+        <div class="stat-bar"><div class="stat-bar-fill" id="cpu-bar" style="width: 0%"></div></div>
+        <span class="stat-value" id="cpu-text">--%</span>
+      </div>
+      <div class="stat-line">
+        <span class="stat-label">MEMORY</span>
+        <div class="stat-bar"><div class="stat-bar-fill" id="ram-bar" style="width: 0%"></div></div>
+        <span class="stat-value" id="ram-text">--</span>
+      </div>
+      <div class="stat-line">
+        <span class="stat-label">STORAGE</span>
+        <div class="stat-bar"><div class="stat-bar-fill" id="disk-bar" style="width: 0%"></div></div>
+        <span class="stat-value" id="disk-text">-- GB</span>
+      </div>
     </div>
 
     <div id="misc">
-      CLOCK<br>
-      <span id="clock">--:--:--</span>
+      <div id="datetime">---</div>
+      <div id="uptime">UPTIME.--h --m --s</div>
     </div>
 
   </div>
 </div>
 
 <script>
-/* ===== CLOCK ===== */
+
+const bootLines = [
+  "> Initializing PATCH interface...",
+  "> Establishing connection...",
+  "> System ready."
+];
+
+const MAX_TERMINAL_LINES = 145;
+
+function showBootScreen() {
+  const term = document.getElementById("terminal");
+  term.innerHTML = "";
+
+  bootLines.forEach(line => {
+    const div = document.createElement("div");
+    div.className = "log-line";
+    div.textContent = line;
+    term.appendChild(div);
+  });
+}
+
+/* ===== REAL-TIME CLOCK ===== */
 function updateClock() {
   const now = new Date();
-  const h = String(now.getHours()).padStart(2,"0");
-  const m = String(now.getMinutes()).padStart(2,"0");
-  const s = String(now.getSeconds()).padStart(2,"0");
-  document.getElementById("clock").textContent = `${h}:${m}:${s}`;
+
+  const h = String(now.getHours()).padStart(2, "0");
+  const m = String(now.getMinutes()).padStart(2, "0");
+  const s = String(now.getSeconds()).padStart(2, "0");
+
+  const day = now.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase();
+  const date = String(now.getDate()).padStart(2, "0");
+  const month = now.toLocaleDateString(undefined, { month: "short" }).toUpperCase();
+  const year = now.getFullYear();
+
+  document.getElementById("datetime").textContent =
+    `${day} ${date} ${month} ${year}, ${h}:${m}:${s}`;
 }
+
 setInterval(updateClock, 1000);
 updateClock();
 
-/* ===== FAKE SYSTEM MONITOR ===== */
-setInterval(() => {
-  document.getElementById("gpu").textContent =
-    Math.floor(45 + Math.random()*25) + "%";
-  document.getElementById("vram").textContent =
-    (4.5 + Math.random()).toFixed(1) + " GB";
-}, 1500);
+/* ===== FETCH REAL SYSTEM STATS ===== */
+let bootTime = Date.now();
 
-/* ===== LOGS ===== */
-let lastTimestamp = "";
+async function fetchStats() {
+  try {
+    const res = await fetch("/api/stats");
+    const stats = await res.json();
+    
+    // NEW: Function to check for critical levels
+    const checkAlert = (barId, percent) => {
+      const bar = document.getElementById(barId);
+      if (percent >= 90) bar.classList.add('critical');
+      else bar.classList.remove('critical');
+    };
+
+    // GPU VRAM
+    if (stats.gpu && stats.gpu.available) {
+      const vramPercent = stats.gpu.vram_percent;
+      document.getElementById("vram-bar").style.width = vramPercent + "%";
+      document.getElementById("vram-text").textContent = 
+        `${stats.gpu.vram_used_gb}/${stats.gpu.vram_total_gb}GB`;
+      checkAlert("vram-bar", vramPercent);
+    } else {
+      document.getElementById("vram-text").textContent = "N/A";
+    }
+    
+    // CPU
+    document.getElementById("cpu-bar").style.width = stats.cpu_percent + "%";
+    document.getElementById("cpu-text").textContent = stats.cpu_percent + "%";
+    checkAlert("cpu-bar", stats.cpu_percent);
+    
+    // RAM
+    document.getElementById("ram-bar").style.width = stats.ram_percent + "%";
+    document.getElementById("ram-text").textContent = 
+      `${stats.ram_used_gb}/${stats.ram_total_gb}GB`;
+    checkAlert("ram-bar", stats.ram_percent);
+    
+    // DISK (Storage)
+    const diskFree = stats.disk_free_gb;
+    const diskTotal = stats.disk_total_gb || 512; // Fallback to 512 if total is missing
+    
+    if (diskFree !== undefined) {
+        // Calculate used space based on what we have
+        const diskUsed = stats.disk_used_gb !== undefined ? stats.disk_used_gb : (diskTotal - diskFree);
+        const diskPercent = (diskUsed / diskTotal) * 100;
+
+        document.getElementById("disk-bar").style.width = diskPercent + "%";
+        document.getElementById("disk-text").textContent = `${diskUsed.toFixed(1)}/${diskTotal}GB`;
+        checkAlert("disk-bar", diskPercent);
+    } else {
+        document.getElementById("disk-text").textContent = "N/A";
+        document.getElementById("disk-bar").style.width = "0%";
+    }
+
+    // FACE REACTION BASED ON ALERTS
+    const faceExpr = document.getElementById("face-expression");
+    const faceState = document.getElementById("face-state");
+    if (document.querySelector('.critical')) {
+        faceExpr.src = expressions.overload;
+        faceState.textContent = "SYSTEM OVERLOAD";
+        faceState.style.color = "#ff4444";
+    } else {
+        faceExpr.src = expressions.idle;
+        faceState.textContent = "IDLE";
+        faceState.style.color = "var(--accent)";
+    }
+    
+  } catch (err) {
+    console.error("Stats fetch failed:", err);
+  }
+}
+
+setInterval(fetchStats, 2000);
+fetchStats();
+
+/* ===== UPTIME COUNTER ===== */
+function updateUptime() {
+  const elapsed = Math.floor((Date.now() - bootTime) / 1000);
+  const hours = Math.floor(elapsed / 3600);
+  const minutes = Math.floor((elapsed % 3600) / 60);
+  const seconds = elapsed % 60;
+  document.getElementById("uptime").textContent = 
+    `UPTIME.${hours}h ${minutes}m ${seconds}s`;
+}
+setInterval(updateUptime, 1000);
+
+/* ===== FETCH LOGS ===== */
+let lastTimestamp = "00:00:00";
+let shownLines = 0;
+let logsWereEmpty = true;
 
 async function fetchLogs() {
   try {
@@ -168,19 +645,105 @@ async function fetchLogs() {
     const data = await res.json();
     const term = document.getElementById("terminal");
 
-    term.textContent = data.map(raw => {
+    // EMPTY LOGS — only reset ONCE
+    if (!Array.isArray(data) || data.length === 0) {
+      if (!logsWereEmpty) {
+        showBootScreen();
+        shownLines = 0;
+        logsWereEmpty = true;
+      }
+      return;
+    }
+
+    // Logs came back
+    if (logsWereEmpty) {
+      term.innerHTML = "";
+      shownLines = 0;
+      logsWereEmpty = false;
+    }
+
+    const newLines = data.slice(shownLines);
+    shownLines = data.length;
+
+    newLines.forEach((raw) => {
       let line = raw.trim();
-      const ts = line.match(/^\[\d{2}:\d{2}:\d{2}\]/);
-      if (ts) lastTimestamp = ts[0];
-      if (/^=+$/.test(line)) return `${lastTimestamp} ${line}`;
-      if (/^\[\d{2}:\d{2}:\d{2}\]$/.test(line)) return "";
-      return line.replace(/\\n/g,"");
-    }).filter(Boolean).join("\n");
+      if (!line) return;
+
+      const div = document.createElement("div");
+      div.className = "log-line";
+
+      if (line.includes("YOU:")) div.classList.add("log-user");
+      if (line.includes("PATCH:")) div.classList.add("log-patch");
+
+      div.textContent = "> " + line;
+      term.appendChild(div);
+    });
+
+    // Trim old lines if we exceed MAX_TERMINAL_LINES
+    const allLines = term.querySelectorAll('.log-line');
+    if (allLines.length > MAX_TERMINAL_LINES) {
+      const linesToRemove = allLines.length - MAX_TERMINAL_LINES;
+      for (let i = 0; i < linesToRemove; i++) {
+        allLines[i].remove();
+      }
+    }
 
     term.scrollTop = term.scrollHeight;
-  } catch {}
+
+  } catch (err) {
+    console.error("Log fetch failed:", err);
+  }
 }
-setInterval(fetchLogs, 500);
+
+setInterval(fetchLogs, 1000);
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Fetch logs every 1 second (was 500ms, might be too fast)
+setInterval(fetchLogs, 1000);
+
+/* ===== RANDOM GLITCH EFFECT ===== */
+function randomGlitch() {
+  const elements = [
+    document.getElementById('topbar'),
+    document.getElementById('face-circle'),
+    document.getElementById('clock')
+  ];
+  
+  const elem = elements[Math.floor(Math.random() * elements.length)];
+  if (elem) {
+      elem.classList.add('glitch');
+      setTimeout(() => elem.classList.remove('glitch'), 300);
+  }
+}
+
+// Random glitch every 15-30 seconds
+setInterval(() => {
+  if (Math.random() > 0.5) randomGlitch();
+}, 15000 + Math.random() * 15000);
+
+/* ===== EXPRESSION CHANGES (hook this up to status API later) ===== */
+const expressions = {
+  idle: 'static/faces/idle.png',
+  listening: 'static/faces/listening.png',
+  thinking: 'static/faces/thinking.png',
+  speaking: 'static/faces/speaking.png',
+  sleeping: 'static/faces/sleeping.png',
+  overload: 'static/faces/overload.png'
+};
+
+// Helper function to change face expression
+function setExpression(state) {
+  const faceExpr = document.getElementById("face-expression");
+  if (expressions[state]) {
+    faceExpr.src = expressions[state];
+  }
+}
+
 </script>
 
 </body>

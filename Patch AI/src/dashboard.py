@@ -15,16 +15,25 @@ import threading
 app = Flask(__name__)
 CORS(app)
 
-# File paths (same as brain.py)
+# File paths - adjust these to match the structure
 MEMORY_FILE = "Patch AI/data/patch_memory.json"
 REMINDERS_FILE = "Patch AI/data/patch_reminders.json"
-STATUS_FILE = "Patch AI/data/patch_status.json"  # New file for real-time status
+STATUS_FILE = "Patch AI/data/patch_status.json"
+LOG_FILE = "Patch AI/logs/patch.log"
+
+# Fallback paths if above don't exist
+if not os.path.exists(MEMORY_FILE):
+    MEMORY_FILE = "patch_memory.json"
+if not os.path.exists(REMINDERS_FILE):
+    REMINDERS_FILE = "patch_reminders.json"
+if not os.path.exists(LOG_FILE):
+    LOG_FILE = "patch.log"
 
 # Global state
 dashboard_state = {
     "online": True,
     "mode": "BALANCED",
-    "current_state": "idle",  # idle, listening, thinking, speaking, sleeping
+    "current_state": "idle",
     "last_message": "",
     "uptime_start": time.time()
 }
@@ -33,7 +42,7 @@ def get_system_stats():
     """Get real-time system statistics"""
     try:
         # CPU
-        cpu_percent = psutil.cpu_percent(interval=0.1)
+        cpu_percent = round(psutil.cpu_percent(interval=0.1), 1)
         
         # RAM
         ram = psutil.virtual_memory()
@@ -60,10 +69,10 @@ def get_system_stats():
                     "vram_total_gb": round(vram_total, 2),
                     "vram_percent": round((vram_used / vram_total) * 100, 1)
                 }
-        except:
-            pass
+        except Exception as e:
+            print(f"[Dashboard] GPU stats unavailable: {e}")
         
-        # Temperature (Windows - requires external tool, Linux - sensors)
+        # Temperature
         temp = "N/A"
         try:
             if hasattr(psutil, "sensors_temperatures"):
@@ -77,24 +86,33 @@ def get_system_stats():
             "cpu_percent": cpu_percent,
             "ram_used_gb": round(ram_used_gb, 2),
             "ram_total_gb": round(ram_total_gb, 2),
-            "ram_percent": ram.percent,
+            "ram_percent": round(ram.percent, 1),
             "disk_free_gb": round(disk_free_gb, 1),
             "disk_total_gb": round(disk_total_gb, 1),
-            "disk_percent": disk.percent,
+            "disk_percent": round(disk.percent, 1),
             "temperature": temp,
             "gpu": gpu_stats
         }
     except Exception as e:
         print(f"[Dashboard] Error getting system stats: {e}")
-        return {}
+        return {
+            "cpu_percent": 0,
+            "ram_used_gb": 0,
+            "ram_total_gb": 0,
+            "ram_percent": 0,
+            "disk_free_gb": 0,
+            "disk_total_gb": 0,
+            "disk_percent": 0,
+            "temperature": "N/A",
+            "gpu": {"available": False}
+        }
 
 def get_conversation_log():
     """Get recent conversation from memory file"""
     try:
         if os.path.exists(MEMORY_FILE):
-            with open(MEMORY_FILE, 'r') as f:
+            with open(MEMORY_FILE, 'r', encoding='utf-8') as f:
                 messages = json.load(f)
-                # Filter out system messages, return last 10
                 conversation = []
                 for msg in messages:
                     if msg['role'] in ['user', 'assistant']:
@@ -102,7 +120,7 @@ def get_conversation_log():
                             "role": msg['role'],
                             "content": msg['content']
                         })
-                return conversation[-10:]  # Last 10 messages
+                return conversation[-10:]
         return []
     except Exception as e:
         print(f"[Dashboard] Error reading conversation: {e}")
@@ -112,9 +130,8 @@ def get_reminders():
     """Get active reminders"""
     try:
         if os.path.exists(REMINDERS_FILE):
-            with open(REMINDERS_FILE, 'r') as f:
+            with open(REMINDERS_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                # Handle both old and new format
                 if "active" in data:
                     reminders = data["active"]
                 elif "reminders" in data:
@@ -122,10 +139,9 @@ def get_reminders():
                 else:
                     reminders = []
                 
-                # Filter active only and sort by time
                 active = [r for r in reminders if not r.get('triggered', False)]
-                active.sort(key=lambda x: x['time'])
-                return active[:10]  # Top 10
+                active.sort(key=lambda x: x.get('time', ''))
+                return active[:10]
         return []
     except Exception as e:
         print(f"[Dashboard] Error reading reminders: {e}")
@@ -135,7 +151,7 @@ def get_patch_status():
     """Get Patch's current status from status file"""
     try:
         if os.path.exists(STATUS_FILE):
-            with open(STATUS_FILE, 'r') as f:
+            with open(STATUS_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
         return dashboard_state
     except:
@@ -168,18 +184,36 @@ def api_reminders():
     """Get active reminders"""
     return jsonify(get_reminders())
 
+@app.route('/api/logs')
+def api_logs():
+    """Get terminal logs"""
+    try:
+        if os.path.exists(LOG_FILE):
+            with open(LOG_FILE, "r", encoding="utf-8") as f:
+                lines = f.readlines()[-100:]  # Last 100 lines
+            return jsonify(lines)
+        else:
+            # Fallback: return conversation as logs
+            conv = get_conversation_log()
+            logs = []
+            for msg in conv:
+                prefix = "YOU:" if msg['role'] == 'user' else "PATCH:"
+                logs.append(f"{prefix} {msg['content']}\n")
+            return jsonify(logs)
+    except Exception as e:
+        print(f"[Dashboard] Error reading logs: {e}")
+        return jsonify(["[System] Log file not found"])
+
 @app.route('/api/control/<action>', methods=['POST'])
 def api_control(action):
     """Control Patch (sleep, wake, mode switch, etc.)"""
-    # This writes commands to a control file that brain.py reads
     try:
         command = {
             "action": action,
             "timestamp": datetime.now().isoformat()
         }
         
-        # Write command to file
-        with open("patch_command.json", 'w') as f:
+        with open("patch_command.json", 'w', encoding='utf-8') as f:
             json.dump(command, f)
         
         return jsonify({"success": True, "action": action})
@@ -194,7 +228,6 @@ def api_add_reminder():
         task = data.get('task')
         time_str = data.get('time')
         
-        # Write to command file for brain.py to process
         command = {
             "action": "add_reminder",
             "task": task,
@@ -202,7 +235,7 @@ def api_add_reminder():
             "timestamp": datetime.now().isoformat()
         }
         
-        with open("patch_command.json", 'w') as f:
+        with open("patch_command.json", 'w', encoding='utf-8') as f:
             json.dump(command, f)
         
         return jsonify({"success": True})
@@ -219,33 +252,26 @@ def api_delete_reminder(reminder_id):
             "timestamp": datetime.now().isoformat()
         }
         
-        with open("patch_command.json", 'w') as f:
+        with open("patch_command.json", 'w', encoding='utf-8') as f:
             json.dump(command, f)
         
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
-    
-@app.route("/api/logs")
-def api_logs():
-    try:
-        with open("logs/patch.log", "r", encoding="utf-8") as f:
-            lines = f.readlines()[-200:]  # last 200 lines
-        return jsonify(lines)
-    except:
-        return jsonify([])
 
 if __name__ == '__main__':
-    print("\n" + "="*50)
-    print("PATCH DASHBOARD SERVER STARTING")
-    print("="*50)
-    print("\nAccess dashboard at:")
-    print("  Local:   http://localhost:5000")
-    print("  Network: http://YOUR_IP:5000")
+    print("\n" + "="*60)
+    print(" "*15 + "PATCH DASHBOARD SERVER")
+    print("="*60)
+    print("\n📡 Dashboard Access:")
+    print("  → Local:   http://localhost:5000")
+    print("  → Network: http://YOUR_IP:5000")
+    print("\n📁 File Paths:")
+    print(f"  → Memory:    {MEMORY_FILE}")
+    print(f"  → Reminders: {REMINDERS_FILE}")
+    print(f"  → Logs:      {LOG_FILE}")
+    print("\n💡 Tip: Run brain.py first, then this dashboard")
     print("\nPress Ctrl+C to stop\n")
     
     # Run Flask server
     app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
-
-
-## IM A FUCKING GENIUSSSSSS
