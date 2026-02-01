@@ -215,7 +215,9 @@ This repository currently represents the **brain**, not the body.
 
 This project is experimental and built for learning, exploration, and fun.  
 APIs, structure, and behavior may often change.
-(PLEASE NOTE THAT I'm 15. I tried my best (┬┬﹏┬┬))
+
+PLEASE NOTE THAT I'm 15. I tried my best (┬┬﹏┬┬)
+If you have any suggestions, comments, or would like to offer some help, please do so by contacting me
 
 ---
 
