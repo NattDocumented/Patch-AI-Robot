@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PATCH AI DASHBOARD</title>
+
+<style>
+:root {
+  --bg: #0a0a0a;
+  --panel: #111;
+  --accent: #d4c16a;
+  --text: #e8e8e8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Courier New", monospace;
+  overflow: hidden;
+}
+
+/* ===== TOP BAR ===== */
+#topbar {
+  height: 40px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #222;
+  color: var(--accent);
+  font-size: 16px;
+}
+
+/* ===== MAIN LAYOUT (same as sketch) ===== */
+#main {
+  display: grid;
+  grid-template-columns: 2.4fr 1.6fr;
+  height: calc(100vh - 40px);
+}
+
+/* ===== LEFT: TERMINAL ===== */
+#terminal {
+  padding: 14px;
+  background: #000;
+  font-size: 18px;
+  line-height: 1.45;
+  letter-spacing: 0.3px;
+  white-space: pre;
+  overflow-y: auto;
+  text-shadow: 0 0 6px rgba(212,193,106,0.15);
+}
+
+/* ===== RIGHT PANEL ===== */
+#right {
+  display: grid;
+  grid-template-rows: 2.2fr 1fr 1fr;
+  border-left: 1px solid #222;
+  background: var(--panel);
+}
+
+/* ===== FACE / EXPRESSION ===== */
+#face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #222;
+  background: radial-gradient(circle at center, rgba(212,193,106,0.08), transparent 70%);
+}
+
+@keyframes breathe {
+  0%   { box-shadow: 0 0 18px rgba(212,193,106,0.25); }
+  50%  { box-shadow: 0 0 40px rgba(212,193,106,0.5); }
+  100% { box-shadow: 0 0 18px rgba(212,193,106,0.25); }
+}
+
+#face-circle {
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-size: 22px;
+  letter-spacing: 1px;
+  animation: breathe 4s ease-in-out infinite;
+}
+
+/* ===== SYSTEM MONITOR ===== */
+#system {
+  padding: 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  border-bottom: 1px solid #222;
+}
+
+/* ===== CLOCK / MISC ===== */
+#misc {
+  padding: 14px;
+}
+
+#clock {
+  font-size: 22px;
+  color: var(--accent);
+}
+</style>
+</head>
+
+<body>
+
+<div id="topbar">PATCH AI : v0.1</div>
+
+<div id="main">
+
+  <!-- TERMINAL -->
+  <div id="terminal">Initializing PATCH interface...</div>
+
+  <!-- RIGHT SIDE -->
+  <div id="right">
+
+    <div id="face">
+      <div id="face-circle">PATCH</div>
+    </div>
+
+    <div id="system">
+      SYSTEM MONITOR<br>
+      GPU LOAD: <span id="gpu">--%</span><br>
+      VRAM: <span id="vram">--</span><br>
+      STATUS: ONLINE
+    </div>
+
+    <div id="misc">
+      CLOCK<br>
+      <span id="clock">--:--:--</span>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ===== CLOCK ===== */
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,"0");
+  const m = String(now.getMinutes()).padStart(2,"0");
+  const s = String(now.getSeconds()).padStart(2,"0");
+  document.getElementById("clock").textContent = `${h}:${m}:${s}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ===== FAKE SYSTEM MONITOR ===== */
+setInterval(() => {
+  document.getElementById("gpu").textContent =
+    Math.floor(45 + Math.random()*25) + "%";
+  document.getElementById("vram").textContent =
+    (4.5 + Math.random()).toFixed(1) + " GB";
+}, 1500);
+
+/* ===== LOGS ===== */
+let lastTimestamp = "";
+
+async function fetchLogs() {
+  try {
+    const res = await fetch("/api/logs");
+    const data = await res.json();
+    const term = document.getElementById("terminal");
+
+    term.textContent = data.map(raw => {
+      let line = raw.trim();
+      const ts = line.match(/^\[\d{2}:\d{2}:\d{2}\]/);
+      if (ts) lastTimestamp = ts[0];
+      if (/^=+$/.test(line)) return `${lastTimestamp} ${line}`;
+      if (/^\[\d{2}:\d{2}:\d{2}\]$/.test(line)) return "";
+      return line.replace(/\\n/g,"");
+    }).filter(Boolean).join("\n");
+
+    term.scrollTop = term.scrollHeight;
+  } catch {}
+}
+setInterval(fetchLogs, 500);
+</script>
+
+</body>
+</html>

@@ -57,3 +57,9 @@ archive/**/Assets/*
 !Patch AI/Assets/Sounds/poweroff_sounds/.gitkeep
 !Patch AI/Assets/Faces/.gitkeep
 !archive/**/Assets/.gitkeep
+
+Patch AI/src/templates/*
+#ALL EXPERIMENTAL dashboard.html
+
+!Patch AI/src/templates/dashboard.html
+#the one

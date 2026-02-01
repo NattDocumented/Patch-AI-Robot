@@ -13,9 +13,31 @@ from soprano import SopranoTTS
 from soprano.utils.streaming import play_stream
 import shutil
 from datetime import datetime, timedelta
+import builtins
 #import pytz
 
 #os.environ["OLLAMA_NUM_GPU"] = "1"
+
+os.makedirs("logs", exist_ok=True)
+
+_original_print = builtins.print
+
+with open("logs/patch.log", "w", encoding="utf-8") as f:
+    f.write("")
+
+def print(*args, **kwargs):
+    sep = kwargs.get("sep", " ")
+    end = kwargs.get("end", "\n")
+
+    text = sep.join(str(a) for a in args)
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    line = f"[{timestamp}] {text}"
+
+    _original_print(line, end=end)
+
+    with open("logs/patch.log", "a", encoding="utf-8") as f:
+        f.write(line + end)
+
 
 # Try to import torch for GPU detection, fallback to CPU if it fails
 try:
@@ -844,7 +866,7 @@ async def async_input(prompt=""):
 is_sleeping = False
 
 async def run_patch():
-    global interaction_mode, is_sleeping, ARCHIVE_RETENTION_DAYS
+    global interaction_mode, is_sleeping, ARCHIVE_RETENTION_DAYS, r, m
     messages = load_memory()
 
     deep_clean_system()
